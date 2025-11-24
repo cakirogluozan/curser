@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class Player : MonoBehaviour
@@ -36,6 +37,7 @@ public class Player : MonoBehaviour
     [SerializeField] private string triggerJumping = "TriggerJumping";
     [SerializeField] private string triggerDoubleJumping = "TriggerDoubleJumping";
     [SerializeField] private string triggerFalling = "TriggerFalling";
+    [SerializeField] private string triggerDashing = "TriggerDashing";
     
     [Header("Animation Options")]
     [SerializeField] private bool useRunningAnimationForWalking = false;
@@ -51,6 +53,14 @@ public class Player : MonoBehaviour
     [SerializeField] private float doubleJumpForce = 10f;
     [SerializeField] private Key jumpKey = Key.Space;
 
+    [Header("Dash Settings")]
+    [SerializeField] private float dashForce = 15f;
+    [SerializeField] private float dashDuration = 0.2f;
+    [SerializeField] private float dashCooldown = 0.5f;
+
+    [Header("Restart Settings")]
+    [SerializeField] private float restartHoldDuration = 2f;
+
     private Rigidbody2D rb;
     private bool isCrouching;
     private bool wasCrouching;
@@ -62,8 +72,17 @@ public class Player : MonoBehaviour
     private enum JumpState { Grounded, Jumping, Falling, DoubleJumping }
     private JumpState jumpState = JumpState.Grounded;
 
+    // Dash state
+    private bool isDashing = false;
+    private float dashTimer = 0f;
+    private float dashCooldownTimer = 0f;
+    private float dashDirection = 0f;
+
+    // Restart state
+    private float restartHoldTimer = 0f;
+
     // Animation states
-    private enum AnimationState { Idle, Walking, Running, Crouching, WalkCrouching, Jumping, DoubleJumping, Falling }
+    private enum AnimationState { Idle, Walking, Running, Crouching, WalkCrouching, Jumping, DoubleJumping, Falling, Dashing }
     private AnimationState currentState = AnimationState.Idle;
 
     void Awake()
@@ -99,6 +118,12 @@ public class Player : MonoBehaviour
                 Debug.LogWarning("Animator not found! Assign an Animator component on the player or its child model.");
         }
 
+        // Verify AnimatorController is assigned
+        if (animator != null && animator.runtimeAnimatorController == null)
+        {
+            Debug.LogError($"Animator on '{animator.gameObject.name}' has no AnimatorController assigned! Please assign a controller in the Inspector.");
+        }
+
         // Create ground check if missing
         if (groundCheck == null)
         {
@@ -112,6 +137,7 @@ public class Player : MonoBehaviour
     void Update()
     {
         HandleInput();
+        UpdateDash();
         UpdateJumpState();
         UpdateAnimations();
         RotatePlayer();
@@ -161,11 +187,41 @@ public class Player : MonoBehaviour
                 DoubleJump();
             }
         }
+
+        // Dashing (Ctrl key)
+        if ((Keyboard.current.leftCtrlKey.wasPressedThisFrame || Keyboard.current.rightCtrlKey.wasPressedThisFrame) 
+            && !isDashing && dashCooldownTimer <= 0f)
+        {
+            Dash();
+        }
+
+        // Restart (Hold R for 2 seconds)
+        if (Keyboard.current.rKey.isPressed)
+        {
+            restartHoldTimer += Time.deltaTime;
+            if (restartHoldTimer >= restartHoldDuration)
+            {
+                RestartGame();
+            }
+        }
+        else
+        {
+            restartHoldTimer = 0f; // Reset timer when R is released
+        }
     }
 
     private void MovePlayer()
     {
-        rb.linearVelocity = new Vector2(horizontalInput * currentMoveSpeed, rb.linearVelocity.y);
+        if (isDashing)
+        {
+            // During dash, maintain dash velocity
+            rb.linearVelocity = new Vector2(dashDirection * dashForce, rb.linearVelocity.y);
+        }
+        else
+        {
+            // Normal movement
+            rb.linearVelocity = new Vector2(horizontalInput * currentMoveSpeed, rb.linearVelocity.y);
+        }
     }
 
     private void LockZPosition()
@@ -175,6 +231,23 @@ public class Player : MonoBehaviour
             Vector3 pos = modelTransform.position;
             pos.z = fixedZPosition;
             modelTransform.position = pos;
+        }
+    }
+
+    private void UpdateDash()
+    {
+        if (isDashing)
+        {
+            dashTimer -= Time.deltaTime;
+            if (dashTimer <= 0f)
+            {
+                isDashing = false;
+                dashCooldownTimer = dashCooldown;
+            }
+        }
+        else if (dashCooldownTimer > 0f)
+        {
+            dashCooldownTimer -= Time.deltaTime;
         }
     }
 
@@ -200,15 +273,34 @@ public class Player : MonoBehaviour
     private void Jump()
     {
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
-        if (animator != null)
+        if (IsAnimatorValid())
             animator.SetTrigger(triggerJumping);
     }
 
     private void DoubleJump()
     {
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, doubleJumpForce);
-        if (animator != null)
+        if (IsAnimatorValid())
             animator.SetTrigger(triggerDoubleJumping);
+    }
+
+    private void Dash()
+    {
+        // Determine dash direction: use input direction, or facing direction if no input
+        dashDirection = Mathf.Abs(horizontalInput) > 0.1f ? Mathf.Sign(horizontalInput) : 
+                       (modelTransform != null && modelTransform.localScale.x < 0 ? -1f : 1f);
+        
+        isDashing = true;
+        dashTimer = dashDuration;
+        
+        if (IsAnimatorValid())
+            animator.SetTrigger(triggerDashing);
+    }
+
+    private void RestartGame()
+    {
+        // Reload the current scene
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     private void RotatePlayer()
@@ -224,7 +316,7 @@ public class Player : MonoBehaviour
 
     private void UpdateAnimations()
     {
-        if (animator == null) return;
+        if (!IsAnimatorValid()) return;
 
         AnimationState targetState = DetermineAnimationState();
 
@@ -235,10 +327,23 @@ public class Player : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Checks if the animator exists and has a valid AnimatorController assigned
+    /// </summary>
+    private bool IsAnimatorValid()
+    {
+        if (animator == null) return false;
+        if (animator.runtimeAnimatorController == null) return false;
+        return true;
+    }
+
 
     private AnimationState DetermineAnimationState()
     {
         float absSpeed = Mathf.Abs(horizontalInput * currentMoveSpeed);
+
+        // Dashing takes highest priority
+        if (isDashing) return AnimationState.Dashing;
 
         // Jumping states take priority
         if (jumpState == JumpState.Jumping) return AnimationState.Jumping;
@@ -257,6 +362,8 @@ public class Player : MonoBehaviour
     }
     private void TriggerAnimation(AnimationState state)
     {
+        if (!IsAnimatorValid()) return;
+        
         ResetAllTriggers();
         switch (state)
         {
@@ -270,11 +377,14 @@ public class Player : MonoBehaviour
             case AnimationState.Jumping: animator.SetTrigger(triggerJumping); break;
             case AnimationState.DoubleJumping: animator.SetTrigger(triggerDoubleJumping); break;
             case AnimationState.Falling: animator.SetTrigger(triggerFalling); break;
+            case AnimationState.Dashing: animator.SetTrigger(triggerDashing); break;
         }
     }
+    
     private void ResetAllTriggers()
     {
-        if (animator == null) return;
+        if (!IsAnimatorValid()) return;
+        
         animator.ResetTrigger(triggerIdle);
         animator.ResetTrigger(triggerWalking);
         animator.ResetTrigger(triggerRunning);
@@ -283,7 +393,7 @@ public class Player : MonoBehaviour
         animator.ResetTrigger(triggerJumping);
         animator.ResetTrigger(triggerDoubleJumping);
         animator.ResetTrigger(triggerFalling);
-
+        animator.ResetTrigger(triggerDashing);
     }
 
     void OnDrawGizmosSelected()
