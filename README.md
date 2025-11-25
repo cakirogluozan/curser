@@ -205,10 +205,133 @@ Main player controller script that handles all player mechanics.
 - Check that ground objects are on the correct layer (set in `groundLayerMask`)
 - Adjust `groundCheckRadius` if needed
 
+## TODO / Development Roadmap
+
+### 🎨 Animation System
+- [ ] **Dying Animation**: Death state and animation when player/enemy health reaches zero
+- [ ] **Shooting Animation**: Attack/shooting animations for player and enemies
+- [ ] **Emotes**: Player emote animations (wave, dance, taunt, etc.)
+- [ ] **Enemy Animations**: Idle, patrol, chase, attack, death animations for enemies
+- [ ] **Boss Animations**: Special animations for boss characters
+- [ ] **Environmental Animations**: Animated props, background elements
+
+### 🎮 Gameplay Features
+- [ ] **Power-ups**: Temporary boosts (speed, damage, invincibility, etc.)
+- [ ] **Skills System**: Unlockable abilities and skill trees
+- [ ] **Inventory System**: Item collection and management
+- [ ] **Item Types**: Weapons, consumables, equipment, collectibles
+- [ ] **Curse System**: Different types of curses with unique effects
+- [ ] **Stage Design**: Multiple levels with unique layouts and challenges
+- [ ] **Boss Fights**: Boss encounters with unique mechanics and patterns
+- [ ] **Boss Models**: 3D models and animations for boss characters
+
+### 🌍 World & Design
+- [ ] **World Theme**: Consistent art style and world design
+- [ ] **Enemy Design**: Visual design and variety for different enemy types
+- [ ] **Environment Art**: Backgrounds, platforms, obstacles, decorations
+- [ ] **Level Progression**: Difficulty curve and level unlocking system
+- [ ] **Parallax Backgrounds**: Multi-layer scrolling backgrounds (partially implemented)
+
+### 🛍️ NPCs & Economy
+- [ ] **Shop NPCs**: Buy/sell items and equipment
+- [ ] **Crafting NPCs**: Craft new curses and items
+- [ ] **Lottery System**: Random reward system
+- [ ] **Currency System**: In-game money/economy
+- [ ] **Dialogue System**: NPC conversations and quests
+
+### 🖥️ UI/UX
+- [ ] **Health Bar**: Player health display
+- [ ] **Mana/Energy Bar**: Resource system display
+- [ ] **Item Display**: Show equipped/collected items
+- [ ] **Minimap**: Level overview and navigation
+- [ ] **Main Menu**: Start screen, settings, credits
+- [ ] **Pause Menu**: In-game pause functionality
+- [ ] **HUD Elements**: Score, level, timer, etc.
+- [ ] **Inventory UI**: Visual inventory management interface
+- [ ] **Skill Tree UI**: Visual representation of skills and upgrades
+
+### 🎬 Media & Marketing
+- [ ] **Gameplay Videos**: Record gameplay clips for trailers
+- [ ] **Game Preview**: Create promotional game preview/trailer
+- [ ] **Screenshots**: Capture key moments and features
+- [ ] **Social Media Assets**: Images and videos for promotion
+
+### 🔧 Technical Improvements
+- [ ] **Save System**: Save/load game progress
+- [ ] **Settings Menu**: Graphics, audio, controls
+- [ ] **Audio System**: Sound effects and background music
+- [ ] **Particle Effects**: Enhanced visual effects (partially implemented)
+- [ ] **Camera System**: Dynamic camera following, zoom, shake effects
+- [ ] **Performance Optimization**: Optimize for target platforms
+- [ ] **Localization**: Multi-language support
+
+### 🐛 Polish & Quality
+- [ ] **Bug Fixes**: Fix known issues and edge cases
+- [ ] **Balance Testing**: Tune difficulty, damage values, spawn rates
+- [ ] **Playtesting**: Gather feedback and iterate
+- [ ] **Accessibility**: Options for colorblind, difficulty settings
+- [ ] **Tutorial**: In-game tutorial or help system
+
+## Suggestions
+
+### Additional Features to Consider:
+- **Combo System**: Chain attacks for bonus damage
+- **Achievement System**: Unlock achievements for milestones
+- **Leaderboards**: Compare scores with other players
+- **Daily Challenges**: Daily quests or challenges
+- **Secrets & Easter Eggs**: Hidden areas and references
+- **Multiple Characters**: Different playable characters with unique abilities
+- **Co-op Mode**: Multiplayer support (local or online)
+- **Procedural Generation**: Randomly generated levels or elements
+- **Weather System**: Dynamic weather effects
+- **Day/Night Cycle**: Time-based gameplay changes
+
+### Code Organization:
+- **ScriptableObjects**: Use for items, enemies, skills configuration
+- **Event System**: Decouple systems using Unity Events or C# events
+- **Object Pooling**: Optimize projectile and effect spawning
+- **State Machine**: Formal state machine for complex behaviors
+- **Data Persistence**: JSON or ScriptableObject-based save system
+
+### Art & Assets:
+- **Sprite Sheets**: Optimize sprite organization
+- **Animation Controllers**: Separate controllers for different character types
+- **Shader Effects**: Custom shaders for visual polish
+- **Post-Processing**: Add post-processing effects for atmosphere
+
 ## License
 
-[Add your license here]
+Copyright (c) 2024 AI Developer
+
+**Personal Use License**
+
+This game and its source code are provided for **personal use only**. 
+
+### Permitted Uses:
+- ✅ Playing the game for personal entertainment
+- ✅ Learning from the source code for educational purposes
+- ✅ Modifying the code for personal use
+- ✅ Sharing gameplay videos or screenshots
+
+### Prohibited Uses:
+- ❌ **Publishing** or redistributing the game
+- ❌ **Commercial use** or selling the game
+- ❌ **Releasing** modified versions publicly
+- ❌ **Claiming ownership** of the game or code
+- ❌ **Using assets** (models, animations, sprites) in other projects without permission
+
+### Terms:
+This game is developed from scratch by an AI developer. All rights are reserved. 
+The game is provided "as is" without warranty of any kind.
+
+**For any questions or permissions beyond personal use, please contact the developer.**
+
+---
+
+**Note**: This license allows you to enjoy and learn from the game, but protects the developer's work from unauthorized distribution or commercial use.
 
 ## Contributing
 
-[Add contribution guidelines here]
+This project is currently not accepting contributions. However, feedback and suggestions are welcome!
+
+If you'd like to report bugs or suggest features, please create an issue in the repository.
