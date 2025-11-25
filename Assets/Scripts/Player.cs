@@ -57,6 +57,7 @@ public class Player : MonoBehaviour
     [SerializeField] private float dashForce = 15f;
     [SerializeField] private float dashDuration = 0.2f;
     [SerializeField] private float dashCooldown = 0.5f;
+    [SerializeField] private float speedDecayRate = 5f; // How fast the speed decays after dash (units per second)
 
     [Header("Restart Settings")]
     [SerializeField] private float restartHoldDuration = 2f;
@@ -77,6 +78,9 @@ public class Player : MonoBehaviour
     private float dashTimer = 0f;
     private float dashCooldownTimer = 0f;
     private float dashDirection = 0f;
+    
+    // Dynamic speed system
+    private float currentHorizontalSpeed = 0f; // Dynamic speed that carries over from dash
 
     // Restart state
     private float restartHoldTimer = 0f;
@@ -214,13 +218,51 @@ public class Player : MonoBehaviour
     {
         if (isDashing)
         {
-            // During dash, maintain dash velocity
-            rb.linearVelocity = new Vector2(dashDirection * dashForce, rb.linearVelocity.y);
+            // During dash, set and maintain dash velocity
+            currentHorizontalSpeed = dashDirection * dashForce;
+            rb.linearVelocity = new Vector2(currentHorizontalSpeed, rb.linearVelocity.y);
         }
         else
         {
-            // Normal movement
-            rb.linearVelocity = new Vector2(horizontalInput * currentMoveSpeed, rb.linearVelocity.y);
+            // Apply speed decay when not dashing
+            if (Mathf.Abs(currentHorizontalSpeed) > 0.1f)
+            {
+                // Decay speed towards zero
+                float decayAmount = speedDecayRate * Time.fixedDeltaTime;
+                if (currentHorizontalSpeed > 0)
+                {
+                    currentHorizontalSpeed = Mathf.Max(0f, currentHorizontalSpeed - decayAmount);
+                }
+                else
+                {
+                    currentHorizontalSpeed = Mathf.Min(0f, currentHorizontalSpeed + decayAmount);
+                }
+            }
+            else
+            {
+                currentHorizontalSpeed = 0f;
+            }
+            
+            // Combine dynamic speed with input-based movement
+            float targetSpeed = horizontalInput * currentMoveSpeed;
+            
+            // If we have dynamic speed, add it to the target speed (but don't exceed max dash speed)
+            if (Mathf.Abs(currentHorizontalSpeed) > 0.1f)
+            {
+                // Preserve dynamic speed direction, but allow input to influence it
+                float combinedSpeed = currentHorizontalSpeed + targetSpeed;
+                // Clamp to prevent exceeding dash speed in the same direction
+                if (Mathf.Sign(combinedSpeed) == Mathf.Sign(currentHorizontalSpeed))
+                {
+                    combinedSpeed = Mathf.Clamp(combinedSpeed, -Mathf.Abs(dashForce), Mathf.Abs(dashForce));
+                }
+                rb.linearVelocity = new Vector2(combinedSpeed, rb.linearVelocity.y);
+            }
+            else
+            {
+                // Normal movement when no dynamic speed
+                rb.linearVelocity = new Vector2(targetSpeed, rb.linearVelocity.y);
+            }
         }
     }
 
@@ -259,6 +301,11 @@ public class Player : MonoBehaviour
         {
             case JumpState.Grounded:
                 if (!groundedNow) jumpState = JumpState.Falling;
+                else
+                {
+                    // Reset dynamic speed when landing (optional - you can remove this if you want speed to persist)
+                    // currentHorizontalSpeed = 0f;
+                }
                 break;
             case JumpState.Jumping:
             case JumpState.DoubleJumping:
@@ -272,14 +319,18 @@ public class Player : MonoBehaviour
 
     private void Jump()
     {
-        rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+        // Use dynamic speed if available, otherwise use current velocity
+        float jumpHorizontalSpeed = Mathf.Abs(currentHorizontalSpeed) > 0.1f ? currentHorizontalSpeed : rb.linearVelocity.x;
+        rb.linearVelocity = new Vector2(jumpHorizontalSpeed, jumpForce);
         if (IsAnimatorValid())
             animator.SetTrigger(triggerJumping);
     }
 
     private void DoubleJump()
     {
-        rb.linearVelocity = new Vector2(rb.linearVelocity.x, doubleJumpForce);
+        // Use dynamic speed if available, otherwise use current velocity
+        float jumpHorizontalSpeed = Mathf.Abs(currentHorizontalSpeed) > 0.1f ? currentHorizontalSpeed : rb.linearVelocity.x;
+        rb.linearVelocity = new Vector2(jumpHorizontalSpeed, doubleJumpForce);
         if (IsAnimatorValid())
             animator.SetTrigger(triggerDoubleJumping);
     }
