@@ -31,10 +31,10 @@ public class AttackHelper : MonoBehaviour
     [SerializeField] private Animator animator;
     [SerializeField] private string attackStateName = "Attacking"; // Name of the attack state in animator
     [SerializeField] private string triggerAttacking = "TriggerAttacking";
+    [SerializeField] private string triggerIdle = "TriggerIdle";
 
     [Header("Model Settings")]
     [SerializeField] private Transform modelTransform;
-    [SerializeField] private bool flipModel = true;
     [SerializeField] private bool preserveOriginalScale = true;
     private Vector3 originalModelScale;
 
@@ -45,6 +45,10 @@ public class AttackHelper : MonoBehaviour
     private bool isAttacking = false;
     private float attackCooldownTimer = 0f;
     private float fireRateTimer = 0f; // Timer for automatic fire rate
+    
+    // Animation state tracking
+    private enum FairyAnimationState { Idle, Attacking }
+    private FairyAnimationState currentAnimationState = FairyAnimationState.Idle;
 
     private void Awake()
     {
@@ -82,6 +86,15 @@ public class AttackHelper : MonoBehaviour
                 fairyAttackFX = GetComponentInChildren<FairyAttackFX>(true);
         }
     }
+    
+    private void Start()
+    {
+        // Initialize with idle animation
+        if (IsAnimatorValid())
+        {
+            TriggerAnimation(FairyAnimationState.Idle);
+        }
+    }
 
     private void Update()
     {
@@ -95,6 +108,9 @@ public class AttackHelper : MonoBehaviour
 
         // Update attack state
         UpdateAttack();
+        
+        // Update animations
+        UpdateAnimations();
     }
 
     private void UpdatePosition()
@@ -177,23 +193,23 @@ public class AttackHelper : MonoBehaviour
             AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
             
             // Check if we're in the attacking state (check by name or tag)
-            bool isInAttackState = !string.IsNullOrEmpty(attackStateName) && stateInfo.IsName(attackStateName) ||
+            bool isInAttackState = (!string.IsNullOrEmpty(attackStateName) && stateInfo.IsName(attackStateName)) ||
                                    stateInfo.IsTag("Attack");
             
-            // If we're in attack state, keep isAttacking true until animation finishes
+            // If we're in attack state, check if animation finished
             if (isInAttackState)
             {
-                // Animation finished when normalizedTime >= 1
+                // Animation finished when normalizedTime >= 1 (and not looping)
                 // normalizedTime represents progress: 0 = start, 1 = end, >1 = looping
                 if (stateInfo.normalizedTime >= 1f && !stateInfo.loop)
                 {
                     isAttacking = false;
                 }
             }
-            else if (!isInAttackState && stateInfo.normalizedTime > 0.1f)
+            else
             {
-                // If we've transitioned out of attack state (and some time has passed), reset
-                // Small delay (0.1f) prevents immediate reset during transition
+                // Not in attack state anymore - reset attack flag
+                // No delay needed - if we're not in attack state, we should reset immediately
                 isAttacking = false;
             }
         }
@@ -209,36 +225,111 @@ public class AttackHelper : MonoBehaviour
 
         if (closestEnemy != null)
         {
-            // Face the enemy
-            bool enemyIsRight = closestEnemy.transform.position.x > transform.position.x;
-            if (flipModel && modelTransform != null)
-            {
-                Vector3 scale = preserveOriginalScale ? originalModelScale : modelTransform.localScale;
-                scale.x = enemyIsRight ? Mathf.Abs(scale.x) : -Mathf.Abs(scale.x);
-                modelTransform.localScale = scale;
-            }
-
-            // Play magic burst particle effect (pass enemy target and damage so it moves toward enemy and triggers rotation)
-            if (fairyAttackFX != null)
-            {
-                fairyAttackFX.PlayMagicFX(closestEnemy.transform, attackDamage);
-            }
-
             if (useProjectiles && projectilePrefab != null)
             {
-                // Spawn projectile
+                // Spawn projectile - damage will be applied when projectile hits
                 SpawnProjectile(closestEnemy.transform);
+                
+                // Play visual effect only (no damage) when using projectiles
+                if (fairyAttackFX != null)
+                {
+                    fairyAttackFX.PlayMagicFX(closestEnemy.transform, 0f); // Pass 0 damage for visual only
+                }
             }
             else
             {
-                // Instant hit (original behavior) - damage only, rotation handled by particle effect
-                Debug.Log($"Attacked enemy at {closestEnemy.transform.position} for {attackDamage} damage!");
-                // Note: Rotation is handled by the particle effect when it hits, not here
+                // No projectiles - use particle effect for damage application
+                if (fairyAttackFX != null)
+                {
+                    fairyAttackFX.PlayMagicFX(closestEnemy.transform, attackDamage);
+                }
+                else
+                {
+                    // Fallback: instant damage if no FX system
+                    Debug.Log($"Attacked enemy at {closestEnemy.transform.position} for {attackDamage} damage!");
+                    closestEnemy.OnAttacked(attackDamage);
+                }
             }
         }
 
         if (IsAnimatorValid())
-            animator.SetTrigger(triggerAttacking);
+            TriggerAnimation(FairyAnimationState.Attacking);
+    }
+    
+    private void UpdateAnimations()
+    {
+        if (!IsAnimatorValid()) return;
+        
+        // Check actual animator state
+        AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+        bool isInAttackState = (!string.IsNullOrEmpty(attackStateName) && stateInfo.IsName(attackStateName)) ||
+                               stateInfo.IsTag("Attack");
+        
+        // Determine target state
+        FairyAnimationState targetState;
+        
+        // Check if attack animation has finished
+        bool attackFinished = isInAttackState && stateInfo.normalizedTime >= 1f && !stateInfo.loop;
+        
+        // Only stay in attacking state if:
+        // 1. We're actively attacking (isAttacking is true)
+        // 2. We're in attack state
+        // 3. Animation hasn't finished yet
+        if (isAttacking && isInAttackState && !attackFinished)
+        {
+            targetState = FairyAnimationState.Attacking;
+        }
+        else
+        {
+            // Not actively attacking, not in attack state, or attack finished - go to idle
+            targetState = FairyAnimationState.Idle;
+            
+            // Reset attack flag if needed
+            if (isAttacking || attackFinished)
+            {
+                isAttacking = false;
+            }
+        }
+        
+        // Always trigger animation if state changed
+        // Also force idle trigger in these cases:
+        // 1. We're currently in attacking state but shouldn't be
+        // 2. We're not in attack state anymore (animator transitioned out)
+        // This ensures we return to idle even if the state detection is slightly off
+        bool shouldTrigger = (targetState != currentAnimationState) || 
+                           (targetState == FairyAnimationState.Idle && currentAnimationState == FairyAnimationState.Attacking) ||
+                           (!isInAttackState && currentAnimationState == FairyAnimationState.Attacking);
+        
+        if (shouldTrigger)
+        {
+            TriggerAnimation(targetState);
+            currentAnimationState = targetState;
+        }
+    }
+    
+    private void TriggerAnimation(FairyAnimationState state)
+    {
+        if (!IsAnimatorValid()) return;
+        
+        ResetAllTriggers();
+        
+        switch (state)
+        {
+            case FairyAnimationState.Idle:
+                animator.SetTrigger(triggerIdle);
+                break;
+            case FairyAnimationState.Attacking:
+                animator.SetTrigger(triggerAttacking);
+                break;
+        }
+    }
+    
+    private void ResetAllTriggers()
+    {
+        if (!IsAnimatorValid()) return;
+        
+        animator.ResetTrigger(triggerIdle);
+        animator.ResetTrigger(triggerAttacking);
     }
 
     private void SpawnProjectile(Transform target)

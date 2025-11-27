@@ -59,11 +59,14 @@ public class FairyAttackFX : MonoBehaviour
             float distanceToTarget = Vector3.Distance(fxInstance.transform.position, target.position);
             if (distanceToTarget < 0.3f)
             {
-                // Hit the enemy - trigger rotation and damage
-                EnemyAI enemy = target.GetComponent<EnemyAI>();
-                if (enemy != null)
+                // Hit the enemy - apply damage only if damage > 0 (allows visual-only mode)
+                if (damage > 0f)
                 {
-                    enemy.OnAttacked(damage);
+                    EnemyAI enemy = target.GetComponent<EnemyAI>();
+                    if (enemy != null)
+                    {
+                        enemy.OnAttacked(damage);
+                    }
                 }
 
                 // If particle system exists, stop it and let it finish

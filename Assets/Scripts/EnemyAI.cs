@@ -12,18 +12,31 @@ public class EnemyAI : MonoBehaviour
     public LayerMask groundLayer;
     public LayerMask playerLayer;
 
+    [Header("Health Settings")]
+    [SerializeField] private float maxHealth = 100f;
+    
+    [Header("Damage Display")]
+    [SerializeField] private GameObject damageNumberPrefab; // Optional prefab for damage numbers
+    [SerializeField] private Vector3 damageNumberOffset = new Vector3(0f, 1f, 0f); // Offset above enemy
+
     private Rigidbody2D rb;
     private Transform player;
     private bool movingRight = true;
+    private float currentHealth;
+    private bool isDead = false;
 
     private void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         player = GameObject.FindGameObjectWithTag("Player").transform;
+        currentHealth = maxHealth;
     }
 
     private void Update()
     {
+        // Don't update if enemy is dead
+        if (isDead) return;
+        
         if (PlayerInRange())
             ChasePlayer();
         else
@@ -33,6 +46,9 @@ public class EnemyAI : MonoBehaviour
     void Patrol()
     {
         rb.linearVelocity = new Vector2((movingRight ? 1 : -1) * patrolSpeed, rb.linearVelocity.y);
+        
+        // Update rotation based on movement direction
+        UpdateRotation();
 
         // Check for edge
         if (!Physics2D.Raycast(groundCheck.position, Vector2.down, 1f, groundLayer))
@@ -42,7 +58,15 @@ public class EnemyAI : MonoBehaviour
     void Flip()
     {
         movingRight = !movingRight;
-        transform.localScale = new Vector3(-transform.localScale.x, transform.localScale.y, transform.localScale.z);
+        UpdateRotation();
+    }
+    
+    void UpdateRotation()
+    {
+        // Rotate enemy to face movement direction (flip horizontally)
+        // Y rotation: 0 degrees = facing right, 180 degrees = facing left
+        float targetRotationY = movingRight ? 0f : 180f;
+        transform.rotation = Quaternion.Euler(0f, targetRotationY, 0f);
     }
 
     bool PlayerInRange()
@@ -61,14 +85,47 @@ public class EnemyAI : MonoBehaviour
         if (shouldFaceRight != movingRight)
         {
             movingRight = shouldFaceRight;
-            transform.localScale = new Vector3(movingRight ? Mathf.Abs(transform.localScale.x) : -Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
+            UpdateRotation();
         }
     }
 
     public void OnAttacked(float damage)
     {
-        // Rotate enemy 90 degrees when attacked
-        transform.Rotate(0f, 0f, 90f);
+        // Don't process damage if already dead
+        if (isDead) return;
+        
+        // Decrease health
+        currentHealth -= damage;
+        
+        // Show damage number above enemy
+        Vector3 damagePosition = transform.position + damageNumberOffset;
+        DamageNumber.CreateDamageNumber(damage, damagePosition, damageNumberPrefab, false, transform);
+        
+        // Check if enemy is dead
+        if (currentHealth <= 0f)
+        {
+            currentHealth = 0f;
+            Die();
+        }
+    }
+    
+    private void Die()
+    {
+        if (isDead) return; // Prevent multiple death calls
+        
+        isDead = true;
+        
+        // Stop movement
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector2.zero;
+        }
+        
+        // Disable AI behavior
+        enabled = false;
+        
+        // Destroy the enemy GameObject
+        Destroy(gameObject);
     }
 
     private void OnCollisionEnter2D(Collision2D collision)

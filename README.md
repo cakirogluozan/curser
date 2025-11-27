@@ -1,6 +1,17 @@
-# Unity 2D Platformer
+# Ozzie and the Curser
 
-A 2D platformer game built with Unity, featuring comprehensive player movement, animations, dash mechanics, and jump systems.
+A 2D platformer game built with Unity, featuring Ozzie (the main character) and the Curser (a fairy companion that follows Ozzie). The game features comprehensive player movement, animations, dash mechanics, jump systems, and combat with enemies.
+
+## Game Overview
+
+**Ozzie and the Curser** is a 2D platformer where you play as Ozzie, a character navigating through challenging levels. The Curser is a magical fairy companion that follows Ozzie and assists in combat by attacking enemies.
+
+### Characters
+- **Ozzie**: The main playable character with full movement and combat capabilities
+- **The Curser**: A fairy companion that follows Ozzie and attacks enemies automatically
+
+### 3D Model Creation
+The fairy (Curser) model was created using text-to-3D AI model generation tools, then rigged and animated using Blender. This allows for smooth 3D animations while maintaining 2D gameplay mechanics.
 
 ## Features
 
@@ -18,7 +29,7 @@ A 2D platformer game built with Unity, featuring comprehensive player movement, 
 - **Restart Functionality**: Hold R for 2 seconds to restart the game
 
 ### Animation System
-- **Complete Animation States**:
+- **Player Animation States**:
   - Idle
   - Walking
   - Running
@@ -28,9 +39,20 @@ A 2D platformer game built with Unity, featuring comprehensive player movement, 
   - Double Jumping
   - Falling
   - Dashing
+- **Fairy Animation States**:
+  - Idle
+  - Attacking
 - **Configurable Animation Triggers**: All animation triggers can be customized
 - **Animation Options**: Option to use running animation for walking
 - **Smart State Management**: Animation states prioritize correctly (dash > jump > movement > idle)
+- **Automatic State Transitions**: Fairy automatically transitions between idle and attacking states
+
+### Combat System
+- **Enemy Health System**: Enemies have 100 health points
+- **Damage System**: Enemies take damage when hit by attacks
+- **Enemy Death**: Enemies are destroyed when health reaches 0
+- **Damage Numbers**: Visual damage numbers display above enemies when hit
+- **Fairy Attacks**: The Curser (fairy) automatically attacks nearby enemies
 
 ### 3D Model Support
 - Support for 3D models in 2D gameplay
@@ -38,6 +60,7 @@ A 2D platformer game built with Unity, featuring comprehensive player movement, 
 - Model flipping based on movement direction
 - Scale preservation options
 - Automatic animator detection on child models
+- **Fairy Model**: Created using text-to-3D AI generation and rigged in Blender
 
 ### Technical Features
 - Input System integration (Unity's new Input System)
@@ -107,10 +130,15 @@ A 2D platformer game built with Unity, featuring comprehensive player movement, 
 Assets/
 ├── Animations/              # Animation clips (.fbx files)
 ├── Models/                  # 3D models and materials
-│   ├── girl.fbx            # Player model
+│   ├── girl.fbx            # Player model (Ozzie)
+│   ├── fairy.fbx           # Fairy model (The Curser) - AI generated and Blender rigged
 │   └── Materials/          # Model materials
 ├── Scripts/                 # C# scripts
-│   ├── Player.cs           # Main player controller
+│   ├── Player.cs           # Main player controller (Ozzie)
+│   ├── AttackHelper.cs    # Fairy attack system (The Curser)
+│   ├── EnemyAI.cs          # Enemy AI and health system
+│   ├── DamageNumber.cs     # Damage number display system
+│   ├── Projectile.cs       # Projectile system for attacks
 │   └── ANIMATOR_SETUP_GUIDE.md  # Animator setup guide
 ├── Scenes/                  # Unity scenes
 │   └── SampleScene.unity   # Main game scene
@@ -130,7 +158,7 @@ Assets/
 
 ### Player.cs
 
-Main player controller script that handles all player mechanics.
+Main player controller script for Ozzie that handles all player mechanics.
 
 #### Key Features:
 - **Input Processing**: Handles keyboard input via Unity's Input System
@@ -185,6 +213,9 @@ Main player controller script that handles all player mechanics.
 - The script validates AnimatorController assignment and logs helpful errors
 - All movement is physics-based using Rigidbody2D
 - Animation states have priority: Dash > Jump > Falling > Crouch > Movement > Idle
+- **Fairy Model Creation**: The Curser model was generated using text-to-3D AI tools, then imported to Blender for rigging and animation setup
+- **Enemy System**: Enemies have 100 health and are destroyed when health reaches 0
+- **Damage System**: Damage numbers appear above enemies when they take damage
 
 ## Troubleshooting
 
@@ -208,14 +239,19 @@ Main player controller script that handles all player mechanics.
 ## TODO / Development Roadmap
 
 ### 🎨 Animation System
+- [x] **Fairy Animations**: Idle and attacking animations for The Curser ✅
+- [x] **Enemy Animations**: Enemy movement and rotation based on direction ✅
 - [ ] **Dying Animation**: Death state and animation when player/enemy health reaches zero
-- [ ] **Shooting Animation**: Attack/shooting animations for player and enemies
+- [ ] **Shooting Animation**: Attack/shooting animations for player
 - [ ] **Emotes**: Player emote animations (wave, dance, taunt, etc.)
-- [ ] **Enemy Animations**: Idle, patrol, chase, attack, death animations for enemies
+- [ ] **Enemy Death Animations**: Death animations for enemies
 - [ ] **Boss Animations**: Special animations for boss characters
 - [ ] **Environmental Animations**: Animated props, background elements
 
 ### 🎮 Gameplay Features
+- [x] **Enemy Health System**: Enemies have health and take damage ✅
+- [x] **Damage System**: Visual damage numbers and health tracking ✅
+- [x] **Fairy Combat**: The Curser attacks enemies automatically ✅
 - [ ] **Power-ups**: Temporary boosts (speed, damage, invincibility, etc.)
 - [ ] **Skills System**: Unlockable abilities and skill trees
 - [ ] **Inventory System**: Item collection and management
