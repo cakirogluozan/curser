@@ -50,7 +50,7 @@ public class Player : MonoBehaviour
 
     [Header("Jump Settings")]
     [SerializeField] private float jumpForce = 10f;
-    [SerializeField] private float doubleJumpForce = 10f;
+    [SerializeField] private float doubleJumpForce = 15f;
     [SerializeField] private Key jumpKey = Key.Space;
 
     [Header("Dash Settings")]
@@ -93,6 +93,15 @@ public class Player : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
 
+        // Enable interpolation for smooth movement when camera follows
+        if (rb != null)
+        {
+            rb.interpolation = RigidbodyInterpolation2D.Interpolate;
+        }
+
+        // Set target frame rate for consistent performance
+        Application.targetFrameRate = 60; // Set to -1 for unlimited, 60 for 60 FPS, 120 for 120 FPS
+
         // Set start position
         transform.position = new Vector3(startPosition.x, startPosition.y, transform.position.z);
         if (rb != null) rb.position = startPosition;
@@ -128,6 +137,15 @@ public class Player : MonoBehaviour
             Debug.LogError($"Animator on '{animator.gameObject.name}' has no AnimatorController assigned! Please assign a controller in the Inspector.");
         }
 
+        // Set Animator update mode to UnscaledTime for consistent animation timing
+        // This prevents flickering when frame rate varies or camera moves
+        if (animator != null)
+        {
+            animator.updateMode = AnimatorUpdateMode.UnscaledTime;
+            // Set culling mode to AlwaysAnimate to prevent flickering when camera moves
+            animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+        }
+
         // Create ground check if missing
         if (groundCheck == null)
         {
@@ -151,6 +169,13 @@ public class Player : MonoBehaviour
     void FixedUpdate()
     {
         MovePlayer();
+        LockZPosition(); // Lock Z position before camera updates to prevent flickering
+    }
+
+    void LateUpdate()
+    {
+        // Also lock Z position here as a safeguard (runs before camera rendering)
+        // This ensures Z stays locked even if animations modify it
         LockZPosition();
     }
 
@@ -270,9 +295,27 @@ public class Player : MonoBehaviour
     {
         if (lockZPosition && modelTransform != null)
         {
-            Vector3 pos = modelTransform.position;
-            pos.z = fixedZPosition;
-            modelTransform.position = pos;
+            // Use localPosition if model is a child, otherwise use position
+            if (modelTransform.parent != null)
+            {
+                Vector3 localPos = modelTransform.localPosition;
+                // Only update if Z position has changed to avoid unnecessary transform modifications
+                if (Mathf.Abs(localPos.z - fixedZPosition) > 0.001f)
+                {
+                    localPos.z = fixedZPosition;
+                    modelTransform.localPosition = localPos;
+                }
+            }
+            else
+            {
+                Vector3 pos = modelTransform.position;
+                // Only update if Z position has changed to avoid unnecessary transform modifications
+                if (Mathf.Abs(pos.z - fixedZPosition) > 0.001f)
+                {
+                    pos.z = fixedZPosition;
+                    modelTransform.position = pos;
+                }
+            }
         }
     }
 

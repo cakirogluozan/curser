@@ -216,6 +216,8 @@ Main player controller script for Ozzie that handles all player mechanics.
 - **Fairy Model Creation**: The Curser model was generated using text-to-3D AI tools, then imported to Blender for rigging and animation setup
 - **Enemy System**: Enemies have 100 health and are destroyed when health reaches 0
 - **Damage System**: Damage numbers appear above enemies when they take damage
+- **UI Templates**: Template main menu and pause menu canvas have been added
+- **First Build**: First build test completed successfully
 
 ## Troubleshooting
 
@@ -280,8 +282,8 @@ Main player controller script for Ozzie that handles all player mechanics.
 - [ ] **Mana/Energy Bar**: Resource system display
 - [ ] **Item Display**: Show equipped/collected items
 - [ ] **Minimap**: Level overview and navigation
-- [ ] **Main Menu**: Start screen, settings, credits
-- [ ] **Pause Menu**: In-game pause functionality
+- [x] **Main Menu**: Start screen, settings, credits ✅ (Template canvas added)
+- [x] **Pause Menu**: In-game pause functionality ✅ (Template canvas added)
 - [ ] **HUD Elements**: Score, level, timer, etc.
 - [ ] **Inventory UI**: Visual inventory management interface
 - [ ] **Skill Tree UI**: Visual representation of skills and upgrades

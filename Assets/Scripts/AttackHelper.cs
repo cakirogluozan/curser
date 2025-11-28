@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 using System.Collections;
 
 public class AttackHelper : MonoBehaviour
@@ -127,12 +129,26 @@ public class AttackHelper : MonoBehaviour
 
     private void HandleAttackInput()
     {
+        // CRITICAL: Don't process attack input if game is paused
+        // This prevents shooting when clicking UI buttons during pause
+        if (Time.timeScale == 0f)
+        {
+            return; // Game is paused, don't process any attack input
+        }
+        
         // Check if attack button is being held/pressed
         bool attackInputHeld = false;
         bool attackInputPressed = false;
 
         if (useMouseForAttack && Mouse.current != null)
         {
+            // IMPORTANT: Check if mouse is over UI before processing attack input
+            // This prevents shooting when clicking on UI buttons (like Resume, Main Menu, etc.)
+            if (IsPointerOverUIElement())
+            {
+                return; // Don't process attack input if clicking on UI
+            }
+            
             if (automaticFire)
             {
                 attackInputHeld = Mouse.current.leftButton.isPressed;
@@ -178,6 +194,36 @@ public class AttackHelper : MonoBehaviour
         {
             fireRateTimer -= Time.deltaTime;
         }
+    }
+    
+    /// <summary>
+    /// Check if the mouse pointer is currently over a UI element
+    /// This prevents gameplay actions (like shooting) when clicking on UI buttons
+    /// Uses GraphicRaycaster for reliable detection with new Input System
+    /// </summary>
+    private bool IsPointerOverUIElement()
+    {
+        // Check if EventSystem exists
+        if (EventSystem.current == null)
+            return false;
+        
+        // For new Input System with Mouse - use GraphicRaycaster for reliable detection
+        if (Mouse.current != null)
+        {
+            PointerEventData pointerData = new PointerEventData(EventSystem.current);
+            Vector2 mousePosition = Mouse.current.position.ReadValue();
+            pointerData.position = mousePosition;
+            
+            // Use GraphicRaycaster to check if pointer is over UI
+            var results = new System.Collections.Generic.List<RaycastResult>();
+            EventSystem.current.RaycastAll(pointerData, results);
+            
+            // If we hit any UI element, return true
+            return results.Count > 0;
+        }
+        
+        // Fallback to standard method
+        return EventSystem.current.IsPointerOverGameObject();
     }
 
     private void UpdateAttack()
